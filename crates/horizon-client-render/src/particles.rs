@@ -350,6 +350,8 @@ pub struct Particle {
     bb_width: f32,
     bb_height: f32,
     pub on_ground: bool,
+    /// Saturn Client's loot beams: kept while `no_particles` is on.
+    pub exempt: bool,
     has_physics: bool,
     /// Particles that move without collision (`move` overridden).
     free_move: bool,
@@ -686,6 +688,7 @@ impl Particle {
     fn blank(ty: ParticleType, p: [f64; 3]) -> Self {
         Self {
             ty,
+            exempt: false,
             position: p,
             previous: p,
             velocity: [0.0; 3],
@@ -1291,6 +1294,15 @@ impl ParticleEngine {
     /// `ClientLevel.random` as client effects use it (`LevelEventHandler`).
     pub fn level_random(&mut self) -> &mut LegacyRandom {
         &mut self.level_random
+    }
+    /// Like `add`, but the particle is `exempt`: kept while `no_particles` is on
+    /// (Saturn Client's loot beams). The caller limits how many it makes.
+    pub fn add_exempt(&mut self, options: &ParticleOptions, p: [f64; 3], v: [f64; 3]) {
+        let seed = self.seeds.next_long();
+        if let Some(mut particle) = self.make(options, p, v, seed) {
+            particle.exempt = true;
+            self.pending.push(particle);
+        }
     }
     /// `ClientLevel.addParticle`: dropped beyond 32 blocks of the camera unless
     /// the type overrides the limiter, and thinned by the Particles option.
@@ -3324,10 +3336,9 @@ impl ParticleEngine {
     }
     pub fn tick(&mut self, level: &ParticleLevel) {
         if self.no_particles {
-            // Saturn Client: drop what is already on screen too.
-            self.particles.clear();
-            self.pending.clear();
-            return;
+            // Saturn Client: keep only the exempt particles (loot beams).
+            self.particles.retain(|p| p.exempt);
+            self.pending.retain(|p| p.exempt);
         }
         self.tick_starters();
         for (options, feet, width, height, life) in std::mem::take(&mut self.emitters) {

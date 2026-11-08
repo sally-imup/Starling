@@ -9,6 +9,6 @@ pub(super) fn run(game: &mut crate::game::Game<'_>, mod_id: &str, button: usize)
     let mut settings = saturn::settings(|key| game.native_setting(saturn::ID, key));
     settings.click(button);
     for (key, value) in settings.stored() {
-        game.native_set_setting(saturn::ID, key, value);
+        game.native_set_setting(saturn::ID, key, &value);
     }
 }

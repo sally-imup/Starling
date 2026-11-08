@@ -15021,6 +15021,7 @@ impl Game<'_> {
         // does not open menus for spectators, so those never show it. An open
         // screen does not hide it: vanilla checks the HUD and the game mode, not the screen.
         let adventure = self.mode == horizon_client::command::args::GameMode::Adventure;
+        let outline_custom = self.native_outline_style();
         let outline = if !skip_world_for_blur
             && touch_target_visible
             && !self.ui.hide_gui
@@ -15377,7 +15378,9 @@ impl Game<'_> {
             dark_disc: self.dark_disc(camera),
             outline,
             outline_after_terrain,
-            outline_high_contrast: self.settings.file.bool("highContrastBlockOutline"),
+            outline_custom,
+            outline_high_contrast: self.settings.file.bool("highContrastBlockOutline")
+                && outline_custom.is_none(),
             debug_lines: &debug_lines,
             debug_lines_on_top: &debug_lines_on_top,
             debug_crosshair: &debug_crosshair,
@@ -20129,6 +20132,7 @@ pub(crate) fn loading_frame(hud: &HudBatch) -> Frame<'_> {
         outline: Vec::new(),
         outline_after_terrain: false,
         outline_high_contrast: false,
+        outline_custom: None,
         debug_lines: &[],
         debug_lines_on_top: &[],
         debug_crosshair: &[],

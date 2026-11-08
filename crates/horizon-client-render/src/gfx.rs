@@ -510,6 +510,9 @@ pub struct Frame<'a> {
     pub outline_after_terrain: bool,
     /// `BlockOutlineRenderState.highContrast`: a thick black outline under a bright one.
     pub outline_high_contrast: bool,
+    /// A native mod's outline: its colour (ARGB) and width scale, drawn as one stroke
+    /// in place of vanilla's. None for vanilla's outline.
+    pub outline_custom: Option<(u32, f32)>,
     /// `lines` with a colour and pixel width (`gizmos::camera_relative`):
     /// the fishing line and debug gizmos, depth tested, then gizmos drawn
     /// over everything.
@@ -6973,7 +6976,9 @@ impl Renderer {
                     line
                 })
             };
-            let lines: Vec<[f32; 8]> = if frame.outline_high_contrast {
+            let lines: Vec<[f32; 8]> = if let Some((argb, scale)) = frame.outline_custom {
+                stroke(argb, width * scale).collect()
+            } else if frame.outline_high_contrast {
                 stroke(0xff00_0000, 7.0)
                     .chain(stroke(0xff57_ffe1, width))
                     .collect()

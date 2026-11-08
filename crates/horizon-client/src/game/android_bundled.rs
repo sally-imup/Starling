@@ -29,6 +29,14 @@ mod saturn_click;
 mod saturn_frame;
 
 #[cfg(target_os = "android")]
+#[path = "android_bundled/saturn/saturn_outline.rs"]
+mod saturn_outline;
+
+#[cfg(target_os = "android")]
+#[path = "android_bundled/saturn/saturn_beams.rs"]
+mod saturn_beams;
+
+#[cfg(target_os = "android")]
 #[path = "android_bundled/zoom/zoom_key.rs"]
 mod zoom_key;
 
@@ -223,4 +231,24 @@ pub(super) fn reset() {
     official_minimap::reset();
     official_recipes::set_viewer(None);
     smartf3_native::reset();
+}
+
+pub(super) fn native_outline_style(game: &Game<'_>) -> Option<(u32, f32)> {
+    #[cfg(target_os = "android")]
+    {
+        saturn_outline::run(game)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = game;
+        None
+    }
+}
+
+pub(super) fn native_tick(game: &mut Game<'_>) {
+    let _ = &game;
+    #[cfg(target_os = "android")]
+    {
+        saturn_beams::run(&mut *game);
+    }
 }

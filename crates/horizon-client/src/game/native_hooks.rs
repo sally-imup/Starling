@@ -1145,7 +1145,9 @@ impl Game<'_> {
     /// Once a tick, in every `Game`: the window's (in single player, on LAN
     /// and on servers), and the server's own (`native_window` is false
     /// there: the single player server thread, a dedicated server).
-    pub(super) fn native_tick(&mut self) {}
+    pub(super) fn native_tick(&mut self) {
+        super::android_bundled::native_tick(self);
+    }
     /// Before an eligible targeted block's selection outline is built.
     /// Cancel skips only the default block highlight, after normal HUD and game-mode gates.
     pub(super) fn native_block_highlight(
@@ -1371,6 +1373,10 @@ impl Game<'_> {
     /// The buttons of mod `mod_id`'s settings page, under its keys: push
     /// their labels when it is yours. Asked again each time the page opens
     /// and after each click.
+    /// A native mod's block outline: its colour (ARGB) and width scale, or None for vanilla's.
+    pub(super) fn native_outline_style(&self) -> Option<(u32, f32)> {
+        super::android_bundled::native_outline_style(self)
+    }
     pub(super) fn native_settings(&mut self, mod_id: &str, buttons: &mut Vec<String>) {
         super::android_bundled::native_settings(self, mod_id, buttons);
         let _ = (mod_id, buttons);
