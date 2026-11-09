@@ -242,6 +242,10 @@ impl Game<'_> {
     /// front of) it, pulled in where visual shapes are in the way. Returns the
     /// position, yaw and pitch to render from.
     pub(super) fn camera_view(&mut self, partial: f32) -> Option<(glam::DVec3, f32, f32)> {
+        // Freecam: the camera is somewhere else, and the player is not moved.
+        if let Some(view) = self.native_freecam_view() {
+            return Some(view);
+        }
         // Minecraft.cameraEntity: a server's spectator camera on a mob or
         // another player.
         let (entity, descending) = match self.camera_mob() {
@@ -561,7 +565,7 @@ impl Game<'_> {
     /// `LevelExtractor`'s skip of the camera entity: the player's own body
     /// is drawn unless the camera is in first person, or while it sleeps.
     pub(super) fn own_body_in_view(&self) -> bool {
-        !self.camera_type.first_person() || self.sleeping.is_some()
+        !self.camera_type.first_person() || self.sleeping.is_some() || self.native_freecam_active()
     }
     /// Whether the player's own model shows in the world view (its body or,
     /// while invisible, only its armour and held items).
@@ -654,8 +658,8 @@ impl Game<'_> {
         self.held_item_geometry(m, camera, alpha, packed, true, out);
         // CustomHeadLayer: a pumpkin, skull or other head item.
         self.head_item_geometry(m, camera, alpha, packed, true, out);
-        // LivingEntity.isCurrentlyGlowing: the Glowing effect.
-        if self.potions.effects.get("glowing").is_some() {
+        // LivingEntity.isCurrentlyGlowing: the Glowing effect (and, in freecam, the glow it adds).
+        if self.potions.effects.get("glowing").is_some() || self.native_freecam_active() {
             let color = super::glowing::team_color(self.own_team());
             // LivingEntityRenderer.getRenderType: an invisible glowing body
             // still draws its outline.

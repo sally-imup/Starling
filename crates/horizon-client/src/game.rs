@@ -204,7 +204,7 @@ mod native_falling;
 mod native_hooks;
 #[cfg(target_os = "android")]
 use android_bundled::{
-    official_minimap, official_recipes, official_recipes_glue, official_zoom, saturn_client, smartf3,
+    freecam, no_particle, official_minimap, official_recipes, official_recipes_glue, official_zoom, smartf3,
 };
 mod native_lifecycle;
 mod native_menus;
@@ -14969,8 +14969,7 @@ impl Game<'_> {
         let mut lines = self.fishing_line(alpha, size);
         let g = self.debug_gizmos(alpha as f32, camera.to_array());
         lines.extend(g.lines);
-        let mut on_top = g.on_top;
-        on_top.extend(self.native_xray_lines());
+        let on_top = g.on_top;
         let colored_lights = if self.title.is_none() {
             self.native_frame_visuals(camera, &mut lines)
         } else {
@@ -15022,7 +15021,6 @@ impl Game<'_> {
         // does not open menus for spectators, so those never show it. An open
         // screen does not hide it: vanilla checks the HUD and the game mode, not the screen.
         let adventure = self.mode == horizon_client::command::args::GameMode::Adventure;
-        let outline_custom = self.native_outline_style();
         let outline = if !skip_world_for_blur
             && touch_target_visible
             && !self.ui.hide_gui
@@ -15084,7 +15082,6 @@ impl Game<'_> {
             Vec::new()
         };
         let mut hud = horizon_client::spans::time("hud", || self.hud(size));
-        self.native_gui_batch(&mut hud);
         #[cfg(target_os = "android")]
         {
             self.pad.touch.auxiliary_only =
@@ -15380,9 +15377,7 @@ impl Game<'_> {
             dark_disc: self.dark_disc(camera),
             outline,
             outline_after_terrain,
-            outline_custom,
-            outline_high_contrast: self.settings.file.bool("highContrastBlockOutline")
-                && outline_custom.is_none(),
+            outline_high_contrast: self.settings.file.bool("highContrastBlockOutline"),
             debug_lines: &debug_lines,
             debug_lines_on_top: &debug_lines_on_top,
             debug_crosshair: &debug_crosshair,
@@ -16340,7 +16335,10 @@ impl ApplicationHandler for Game<'_> {
                     self.os_mouse_captured = crate::platform::capture_mouse(true);
                 }
             }
-            self.mouse.on_move(0.0, 0.0, x, y, true, true);
+            // Freecam turns the camera instead, while it is on.
+            if !self.native_freecam_look(x, y) {
+                self.mouse.on_move(0.0, 0.0, x, y, true, true);
+            }
             self.last_input = Instant::now();
         }
     }
@@ -17598,8 +17596,8 @@ impl Game<'_> {
                     }
                     match self.screen {
                         Screen::Playing => {
-                            // Saturn Client's menu, open over the game, takes the click first.
-                            if self.native_menu_takes_mouse(button, pressed) {
+                            // Freecam: clicks do nothing to the world while it is on.
+                            if self.native_freecam_takes_mouse() {
                                 return Ok(());
                             }
                             if pressed && !self.captured {
@@ -20138,7 +20136,6 @@ pub(crate) fn loading_frame(hud: &HudBatch) -> Frame<'_> {
         outline: Vec::new(),
         outline_after_terrain: false,
         outline_high_contrast: false,
-        outline_custom: None,
         debug_lines: &[],
         debug_lines_on_top: &[],
         debug_crosshair: &[],

@@ -9,44 +9,12 @@ use super::native_hooks::*;
 pub(super) mod official_zoom;
 
 #[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/runtime.rs"]
-pub(super) mod saturn_client;
+#[path = "android_bundled/no_particle/no_particle.rs"]
+pub(super) mod no_particle;
 
 #[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_list.rs"]
-mod saturn_list;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_settings.rs"]
-mod saturn_settings;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_click.rs"]
-mod saturn_click;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_frame.rs"]
-mod saturn_frame;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_outline.rs"]
-mod saturn_outline;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_beams.rs"]
-mod saturn_beams;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_xray.rs"]
-mod saturn_xray;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_gui.rs"]
-mod saturn_gui;
-
-#[cfg(target_os = "android")]
-#[path = "android_bundled/saturn/saturn_menu.rs"]
-mod saturn_menu;
+#[path = "android_bundled/freecam/freecam.rs"]
+pub(super) mod freecam;
 
 #[cfg(target_os = "android")]
 #[path = "android_bundled/zoom/zoom_key.rs"]
@@ -148,7 +116,7 @@ pub(super) fn native_key(game: &mut Game<'_>, key: &str, pressed: bool) {
     let _ = (&game, &key, &pressed);
     #[cfg(target_os = "android")]
     {
-        saturn_menu::key(&mut *game, key, pressed);
+        freecam::key(&mut *game, key, pressed);
         zoom_key::run(&mut *game, key, pressed);
     }
 }
@@ -174,7 +142,8 @@ pub(super) fn native_mods(game: &mut Game<'_>, mods: &mut Vec<NativeMod>) {
     #[cfg(target_os = "android")]
     {
         zoom_list::run(&mut *mods);
-        saturn_list::run(&mut *mods);
+        no_particle::list(&mut *mods);
+        freecam::list(&mut *mods);
         minimap_list::run(&mut *mods);
         recipes_list::run(&mut *mods);
         smartf3_list::run(&mut *mods);
@@ -186,7 +155,7 @@ pub(super) fn native_settings(game: &mut Game<'_>, mod_id: &str, buttons: &mut V
     #[cfg(target_os = "android")]
     {
         zoom_settings::run(&mut *game, mod_id, &mut *buttons);
-        saturn_settings::run(&mut *game, mod_id, &mut *buttons);
+        no_particle::settings(&mut *game, mod_id, &mut *buttons);
         minimap_settings::run(&mut *game, mod_id, &mut *buttons);
         recipes_settings::run(&mut *game, mod_id, &mut *buttons);
         smartf3_settings::run(&mut *game, mod_id, &mut *buttons);
@@ -198,7 +167,7 @@ pub(super) fn native_settings_click(game: &mut Game<'_>, mod_id: &str, button: u
     #[cfg(target_os = "android")]
     {
         zoom_click::run(&mut *game, mod_id, button);
-        saturn_click::run(&mut *game, mod_id, button);
+        no_particle::click(&mut *game, mod_id, button);
         minimap_click::run(&mut *game, mod_id, button);
         recipes_click::run(&mut *game, mod_id, button);
         smartf3_click::run(&mut *game, mod_id, button);
@@ -218,9 +187,8 @@ pub(super) fn native_frame(game: &mut Game<'_>, elapsed: Duration) {
     #[cfg(target_os = "android")]
     {
         recipes_frame::run(&mut *game);
-        saturn_frame::run(&mut *game);
-        saturn_gui::frame(&*game, elapsed);
-        saturn_menu::frame(&mut *game);
+        freecam::frame(&mut *game, elapsed);
+        no_particle::frame(&mut *game);
     }
 }
 
@@ -248,76 +216,44 @@ pub(super) fn reset() {
     smartf3_native::reset();
 }
 
-pub(super) fn native_outline_style(game: &Game<'_>) -> Option<(u32, f32)> {
+pub(super) fn native_freecam_active() -> bool {
     #[cfg(target_os = "android")]
     {
-        saturn_outline::run(game)
+        freecam::active()
     }
     #[cfg(not(target_os = "android"))]
     {
-        let _ = game;
+        false
+    }
+}
+
+pub(super) fn native_freecam_view() -> Option<(glam::DVec3, f32, f32)> {
+    #[cfg(target_os = "android")]
+    {
+        freecam::view()
+    }
+    #[cfg(not(target_os = "android"))]
+    {
         None
     }
 }
 
-pub(super) fn native_tick(game: &mut Game<'_>) {
-    let _ = &game;
+pub(super) fn native_freecam_look(dx: f64, dy: f64) -> bool {
     #[cfg(target_os = "android")]
     {
-        saturn_beams::run(&mut *game);
-        saturn_xray::run(&mut *game);
-    }
-}
-
-pub(super) fn native_xray_lines(game: &Game<'_>) -> Vec<horizon_client::gizmos::Line> {
-    #[cfg(target_os = "android")]
-    {
-        saturn_xray::lines(game)
+        freecam::look(dx, dy)
     }
     #[cfg(not(target_os = "android"))]
     {
-        let _ = game;
-        Vec::new()
+        let _ = (dx, dy);
+        false
     }
 }
 
-pub(super) fn native_gui_batch(game: &Game<'_>, batch: &mut horizon_client_render::hud::HudBatch) {
+pub(super) fn native_freecam_takes_mouse() -> bool {
     #[cfg(target_os = "android")]
     {
-        saturn_gui::apply(game, batch);
-        saturn_menu::draw(game, batch);
-    }
-    #[cfg(not(target_os = "android"))]
-    {
-        let _ = (game, batch);
-    }
-}
-
-pub(super) fn native_screen_mouse_button_pressed_pre(
-    screen: &NativeScreenView<'_>,
-    button: i32,
-    canceled: &mut bool,
-) {
-    #[cfg(target_os = "android")]
-    {
-        saturn_menu::click(screen.mouse, button, canceled);
-    }
-    #[cfg(not(target_os = "android"))]
-    {
-        let _ = (screen, button, canceled);
-    }
-}
-
-pub(super) fn native_menu_takes_mouse(
-    game: &mut Game<'_>,
-    mouse: [f32; 2],
-    button: i32,
-    pressed: bool,
-) -> bool {
-    let _ = (&game, &mouse, &button, &pressed);
-    #[cfg(target_os = "android")]
-    {
-        saturn_menu::takes_mouse(mouse, button, pressed)
+        freecam::takes_mouse()
     }
     #[cfg(not(target_os = "android"))]
     {

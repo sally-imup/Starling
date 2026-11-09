@@ -1145,28 +1145,22 @@ impl Game<'_> {
     /// Once a tick, in every `Game`: the window's (in single player, on LAN
     /// and on servers), and the server's own (`native_window` is false
     /// there: the single player server thread, a dedicated server).
-    pub(super) fn native_tick(&mut self) {
-        super::android_bundled::native_tick(self);
+    pub(super) fn native_tick(&mut self) {}
+    /// Freecam: whether it is on.
+    pub(super) fn native_freecam_active(&self) -> bool {
+        super::android_bundled::native_freecam_active()
     }
-    /// A native mod's pass over the frame's GUI (every menu and screen, title included), before
-    /// the touch controls and the virtual pointer are drawn over it.
-    pub(super) fn native_gui_batch(&self, batch: &mut horizon_client_render::hud::HudBatch) {
-        super::android_bundled::native_gui_batch(self, batch);
+    /// Freecam: the camera's (position, yaw, pitch) while it is on.
+    pub(super) fn native_freecam_view(&self) -> Option<(glam::DVec3, f32, f32)> {
+        super::android_bundled::native_freecam_view()
     }
-    /// Whether a native mod's open menu takes a mouse button while playing (its clicks are
-    /// its own, and its release too). The cursor is free while it is open.
-    pub(super) fn native_menu_takes_mouse(&mut self, button: MouseButton, pressed: bool) -> bool {
-        let index = match button {
-            MouseButton::Left => 0,
-            MouseButton::Right => 1,
-            _ => 2,
-        };
-        let mouse = self.native_cursor();
-        super::android_bundled::native_menu_takes_mouse(self, mouse, index, pressed)
+    /// Freecam: whether a mouse button is held back from the world (every press and release while it is on).
+    pub(super) fn native_freecam_takes_mouse(&self) -> bool {
+        super::android_bundled::native_freecam_takes_mouse()
     }
-    /// Native mods' lines drawn over everything, walls included (X-Ray outlines).
-    pub(super) fn native_xray_lines(&self) -> Vec<horizon_client::gizmos::Line> {
-        super::android_bundled::native_xray_lines(self)
+    /// Freecam: a mouse move while it is on turns the camera; true when it did.
+    pub(super) fn native_freecam_look(&self, dx: f64, dy: f64) -> bool {
+        super::android_bundled::native_freecam_look(dx, dy)
     }
     /// Before an eligible targeted block's selection outline is built.
     /// Cancel skips only the default block highlight, after normal HUD and game-mode gates.
@@ -1393,10 +1387,6 @@ impl Game<'_> {
     /// The buttons of mod `mod_id`'s settings page, under its keys: push
     /// their labels when it is yours. Asked again each time the page opens
     /// and after each click.
-    /// A native mod's block outline: its colour (ARGB) and width scale, or None for vanilla's.
-    pub(super) fn native_outline_style(&self) -> Option<(u32, f32)> {
-        super::android_bundled::native_outline_style(self)
-    }
     pub(super) fn native_settings(&mut self, mod_id: &str, buttons: &mut Vec<String>) {
         super::android_bundled::native_settings(self, mod_id, buttons);
         let _ = (mod_id, buttons);
@@ -1626,8 +1616,7 @@ impl Game<'_> {
         modifiers: u32,
         canceled: &mut bool,
     ) {
-        let _ = modifiers;
-        super::android_bundled::native_screen_mouse_button_pressed_pre(screen, button, canceled);
+        let _ = (screen, button, modifiers, canceled);
     }
     /// A mouse button went up over the open screen
     /// (`ScreenEvent.MouseButtonReleased.Pre`, vanilla's
