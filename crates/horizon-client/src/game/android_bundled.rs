@@ -1,6 +1,7 @@
 //! Fixed MIT-licensed Android mod bundle. No downloaded code or phone compiler.
 
 use super::*;
+use winit::keyboard::KeyCode;
 
 use super::native_hooks::*;
 
@@ -258,5 +259,28 @@ pub(super) fn native_freecam_takes_mouse() -> bool {
     #[cfg(not(target_os = "android"))]
     {
         false
+    }
+}
+
+pub(super) fn native_freecam_key(key: KeyCode, pressed: bool) -> bool {
+    #[cfg(target_os = "android")]
+    {
+        freecam::consume_key(key, pressed)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (key, pressed);
+        false
+    }
+}
+
+pub(super) fn native_gui_batch(game: &Game<'_>, batch: &mut horizon_client_render::hud::HudBatch) {
+    #[cfg(target_os = "android")]
+    {
+        freecam::hide_hud(game, batch);
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (game, batch);
     }
 }

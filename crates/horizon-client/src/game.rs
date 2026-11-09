@@ -7497,6 +7497,10 @@ impl Game<'_> {
     /// A key event after rebinding, as the default key of its mapping (the
     /// keyboard and controllers both end here).
     fn mapped_key(&mut self, key: KeyCode, pressed: bool, repeat: bool) -> Result<()> {
+        // Freecam: the movement keys move the camera, not the player.
+        if self.native_freecam_key(key, pressed) {
+            return Ok(());
+        }
         #[cfg(target_os = "android")]
         if !pressed && self.android_custom_key_held(key) {
             return Ok(());
@@ -15082,6 +15086,7 @@ impl Game<'_> {
             Vec::new()
         };
         let mut hud = horizon_client::spans::time("hud", || self.hud(size));
+        self.native_gui_batch(&mut hud);
         #[cfg(target_os = "android")]
         {
             self.pad.touch.auxiliary_only =
@@ -15266,7 +15271,7 @@ impl Game<'_> {
         } else {
             (Vec::new(), None)
         };
-        let mut hand = if skip_world || self.scoping() {
+        let mut hand = if skip_world || self.scoping() || self.native_freecam_active() {
             Vec::new()
         } else {
             self.hand_geometry(camera_alpha)
@@ -15842,6 +15847,10 @@ impl Game<'_> {
     }
     /// A mouse button while playing (window or control socket).
     fn play_mouse(&mut self, button: MouseButton, pressed: bool) -> Result<()> {
+        // Freecam: no attack, use, place or break while it is on.
+        if self.native_freecam_takes_mouse() {
+            return Ok(());
+        }
         #[cfg(target_os = "android")]
         if !pressed && self.android_custom_mouse_held(button) {
             return Ok(());

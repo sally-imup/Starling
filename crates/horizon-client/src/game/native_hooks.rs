@@ -1154,6 +1154,14 @@ impl Game<'_> {
     pub(super) fn native_freecam_view(&self) -> Option<(glam::DVec3, f32, f32)> {
         super::android_bundled::native_freecam_view()
     }
+    /// Freecam: whether a movement key was taken for the camera (and so is not the player's).
+    pub(super) fn native_freecam_key(&mut self, key: KeyCode, pressed: bool) -> bool {
+        super::android_bundled::native_freecam_key(key, pressed)
+    }
+    /// Freecam: the frame's GUI is hidden while it is on, while playing.
+    pub(super) fn native_gui_batch(&self, batch: &mut horizon_client_render::hud::HudBatch) {
+        super::android_bundled::native_gui_batch(self, batch);
+    }
     /// Freecam: whether a mouse button is held back from the world (every press and release while it is on).
     pub(super) fn native_freecam_takes_mouse(&self) -> bool {
         super::android_bundled::native_freecam_takes_mouse()

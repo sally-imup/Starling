@@ -85,6 +85,28 @@ pub(super) fn view() -> Option<(glam::DVec3, f32, f32)> {
     STATE.with_borrow(|s| s.active.then(|| (glam::DVec3::from_array(s.pos), s.yaw, s.pitch)))
 }
 
+/// A movement key while freecam is on: it moves the camera, and the player does not get it.
+/// True when it was taken.
+pub(super) fn consume_key(key: KeyCode, pressed: bool) -> bool {
+    let Some(i) = MOVE_KEYS.iter().position(|k| *k == key) else {
+        return false;
+    };
+    STATE.with_borrow_mut(|s| {
+        if !s.active {
+            return false;
+        }
+        s.held[i] = pressed;
+        true
+    })
+}
+
+/// While freecam is on and playing, the frame has no HUD: the hotbar, the crosshair, and the rest.
+pub(super) fn hide_hud(game: &crate::game::Game<'_>, batch: &mut horizon_client_render::hud::HudBatch) {
+    if active() && matches!(game.screen, crate::game::Screen::Playing) {
+        batch.vertices.clear();
+    }
+}
+
 /// While freecam is on, the world gets no mouse button: no attack, no use, no place, no break.
 pub(super) fn takes_mouse() -> bool {
     active()
@@ -141,6 +163,11 @@ pub(super) fn key(game: &mut crate::game::Game<'_>, key: &str, pressed: bool) {
         return;
     };
     let (yaw, pitch) = (game.yaw, game.pitch);
+    for k in MOVE_KEYS {
+        game.keys.remove(&k);
+    }
+    game.left = false;
+    game.right = false;
     STATE.with_borrow_mut(|s| {
         s.active = true;
         s.pos = eye;
