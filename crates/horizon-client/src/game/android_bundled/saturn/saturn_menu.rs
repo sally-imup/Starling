@@ -3,7 +3,6 @@
 // Saturn Client's menu: RShift opens a grid of its features, one card each. A click on a
 // card's top turns that feature on or off; a click on its strip at the bottom opens its
 // settings page. While the menu is open, a click inside it is taken from the screen under it.
-use crate::game::native_hooks::NativeScreenView;
 use horizon_client_render::hud::HudBatch;
 use std::cell::RefCell;
 
@@ -23,12 +22,13 @@ struct Feature {
     buttons: &'static [usize],
 }
 
-const FEATURES: [Feature; 5] = [
+const FEATURES: [Feature; 6] = [
     Feature { name: "No Particle", buttons: &[0] },
     Feature { name: "Custom selection box", buttons: &[1, 2, 3] },
     Feature { name: "Loot beams", buttons: &[4, 5] },
     Feature { name: "X-Ray", buttons: &[6] },
     Feature { name: "GUI animation", buttons: &[7] },
+    Feature { name: "Optimization", buttons: &[8] },
 ];
 
 #[derive(Default)]
@@ -116,7 +116,8 @@ fn enabled(s: &crate::game::saturn_client::Settings, f: usize) -> bool {
         1 => s.box_on,
         2 => s.beams_on,
         3 => s.xray_on,
-        _ => s.gui_anim,
+        4 => s.gui_anim,
+        _ => s.optimize,
     }
 }
 
