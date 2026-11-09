@@ -262,15 +262,18 @@ pub(super) fn native_freecam_takes_mouse() -> bool {
     }
 }
 
-pub(super) fn native_freecam_key(key: KeyCode, pressed: bool) -> bool {
+pub(super) fn native_freecam_input(
+    keys: &mut std::collections::HashSet<KeyCode>,
+    stick: Option<[f32; 2]>,
+) -> Option<[f32; 2]> {
     #[cfg(target_os = "android")]
     {
-        freecam::consume_key(key, pressed)
+        freecam::take_input(keys, stick)
     }
     #[cfg(not(target_os = "android"))]
     {
-        let _ = (key, pressed);
-        false
+        let _ = keys;
+        stick
     }
 }
 

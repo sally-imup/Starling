@@ -6921,7 +6921,9 @@ impl Game<'_> {
         self.native_tick();
         self.tick_server_mods();
         let camera_eye = self.camera_eye_height();
-        let stick = self.pad_move();
+        let pad = self.pad_move();
+        // Freecam takes the movement keys and the stick for the camera, and the player gets neither.
+        let stick = self.native_freecam_input(pad);
         if self.riding.is_some() && self.player.is_some() {
             let playing = self.screen == Screen::Playing && !self.dialog_open();
             let held = |k| playing && self.keys.contains(&k);
@@ -7497,10 +7499,6 @@ impl Game<'_> {
     /// A key event after rebinding, as the default key of its mapping (the
     /// keyboard and controllers both end here).
     fn mapped_key(&mut self, key: KeyCode, pressed: bool, repeat: bool) -> Result<()> {
-        // Freecam: the movement keys move the camera, not the player.
-        if self.native_freecam_key(key, pressed) {
-            return Ok(());
-        }
         #[cfg(target_os = "android")]
         if !pressed && self.android_custom_key_held(key) {
             return Ok(());

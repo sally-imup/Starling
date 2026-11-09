@@ -60,6 +60,8 @@ struct State {
     pitch: f32,
     /// Whether each movement key is held, in `MOVE_NAMES` order.
     held: [bool; 7],
+    /// The touch or pad stick: `[left, forward]`, as the player reads it.
+    stick: [f32; 2],
 }
 
 thread_local! {
@@ -252,6 +254,9 @@ pub(super) fn frame(game: &mut crate::game::Game<'_>, elapsed: Duration) {
         if s.held[1] {
             add(&mut dir, right, -1.0);
         }
+        // The stick: forward is positive forward, left is positive left.
+        add(&mut dir, forward, f64::from(s.stick[1]));
+        add(&mut dir, right, -f64::from(s.stick[0]));
         if s.held[4] {
             dir[1] += 1.0;
         }

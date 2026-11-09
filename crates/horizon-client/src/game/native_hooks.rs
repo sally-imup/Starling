@@ -1154,9 +1154,10 @@ impl Game<'_> {
     pub(super) fn native_freecam_view(&self) -> Option<(glam::DVec3, f32, f32)> {
         super::android_bundled::native_freecam_view()
     }
-    /// Freecam: whether a movement key was taken for the camera (and so is not the player's).
-    pub(super) fn native_freecam_key(&mut self, key: KeyCode, pressed: bool) -> bool {
-        super::android_bundled::native_freecam_key(key, pressed)
+    /// Freecam: takes the movement keys and the touch or pad stick for the camera. Returns the
+    /// stick for the player, which is none while freecam is on.
+    pub(super) fn native_freecam_input(&mut self, stick: Option<[f32; 2]>) -> Option<[f32; 2]> {
+        super::android_bundled::native_freecam_input(&mut self.keys, stick)
     }
     /// Freecam: the frame's GUI is hidden while it is on, while playing.
     pub(super) fn native_gui_batch(&self, batch: &mut horizon_client_render::hud::HudBatch) {

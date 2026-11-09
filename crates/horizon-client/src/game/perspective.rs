@@ -533,6 +533,10 @@ impl Game<'_> {
     /// The model's old pitch is the player's `xRotO`, which the turn moves
     /// with `xRot` (`turn_rotation`).
     pub(super) fn turn_player(&mut self, xo: f64, yo: f64) {
+        // Freecam turns the camera instead, while it is on (touch and pad looks included).
+        if self.native_freecam_look(xo, yo) {
+            return;
+        }
         let pitch_o = self.player_model.as_ref().map(|m| m.previous_head_pitch);
         let rotation = turn_rotation(self.yaw, self.pitch, pitch_o, xo, yo);
         self.yaw = rotation.y_rot;
