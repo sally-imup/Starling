@@ -87,19 +87,26 @@ pub(super) fn view() -> Option<(glam::DVec3, f32, f32)> {
     STATE.with_borrow(|s| s.active.then(|| (glam::DVec3::from_array(s.pos), s.yaw, s.pitch)))
 }
 
-/// A movement key while freecam is on: it moves the camera, and the player does not get it.
-/// True when it was taken.
-pub(super) fn consume_key(key: KeyCode, pressed: bool) -> bool {
-    let Some(i) = MOVE_KEYS.iter().position(|k| *k == key) else {
-        return false;
-    };
+/// Each tick: the movement keys and the stick are read here, then taken away from the
+/// player. The keys are read on the tick, not at the key press, because the touch controls
+/// set them without a key press. Returns none for the player's stick while freecam is on.
+pub(super) fn take_input(
+    keys: &mut std::collections::HashSet<KeyCode>,
+    stick: Option<[f32; 2]>,
+) -> Option<[f32; 2]> {
+    if !active() {
+        return stick;
+    }
     STATE.with_borrow_mut(|s| {
-        if !s.active {
-            return false;
+        for (i, key) in MOVE_KEYS.iter().enumerate() {
+            s.held[i] = keys.contains(key);
         }
-        s.held[i] = pressed;
-        true
-    })
+        s.stick = stick.unwrap_or([0.0, 0.0]);
+    });
+    for key in MOVE_KEYS {
+        keys.remove(&key);
+    }
+    None
 }
 
 /// While freecam is on and playing, the frame has no HUD: the hotbar, the crosshair, and the rest.
