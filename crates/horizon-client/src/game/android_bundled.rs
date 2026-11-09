@@ -269,7 +269,7 @@ pub(super) fn native_tick(game: &mut Game<'_>) {
     }
 }
 
-pub(super) fn native_xray_lines(game: &Game<'_>) -> Vec<crate::gizmos::Line> {
+pub(super) fn native_xray_lines(game: &Game<'_>) -> Vec<horizon_client::gizmos::Line> {
     #[cfg(target_os = "android")]
     {
         saturn_xray::lines(game)

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT; see LICENSE in this directory.
 // Saturn Client's X-Ray: outlines of ores in the loaded chunks around the player,
 // drawn over the walls. A scan finds them every few ticks; the list is kept until the next.
-use crate::gizmos::Line;
+use horizon_client::gizmos::Line;
 use std::cell::RefCell;
 
 /// Blocks each way from the player the scan covers (horizontally).
@@ -12,6 +12,9 @@ const Y_MIN: i32 = -64;
 const Y_MAX: i32 = 72;
 /// Ticks between scans.
 const SCAN_EVERY: u32 = 40;
+/// With Optimization on: a smaller area, scanned less often.
+const RADIUS_OPTIMIZED: i32 = 8;
+const SCAN_EVERY_OPTIMIZED: u32 = 120;
 /// Most ores kept, so a dense area cannot flood the frame.
 const MAX_TARGETS: usize = 512;
 /// Outline width in pixels.
@@ -51,17 +54,22 @@ fn colour(name: &str) -> Option<u32> {
 
 pub(super) fn run(game: &mut crate::game::Game<'_>) {
     use crate::game::saturn_client as saturn;
-    let on = game.native_on(saturn::ID)
-        && saturn::settings(|key| game.native_setting(saturn::ID, key)).xray_on;
+    let settings = saturn::settings(|key| game.native_setting(saturn::ID, key));
+    let on = game.native_on(saturn::ID) && settings.xray_on;
     if !on {
         STATE.with_borrow_mut(|s| s.targets.clear());
         return;
     }
+    let (radius, every) = if settings.optimize {
+        (RADIUS_OPTIMIZED, SCAN_EVERY_OPTIMIZED)
+    } else {
+        (RADIUS, SCAN_EVERY)
+    };
     let tick = STATE.with_borrow_mut(|s| {
         s.tick = s.tick.wrapping_add(1);
         s.tick
     });
-    if tick % SCAN_EVERY != 1 {
+    if tick % every != 1 {
         return;
     }
     let Some(player) = game.native_player() else {
@@ -69,8 +77,8 @@ pub(super) fn run(game: &mut crate::game::Game<'_>) {
     };
     let (px, pz) = (player.x.floor() as i32, player.z.floor() as i32);
     let mut found = Vec::new();
-    'scan: for x in px - RADIUS..=px + RADIUS {
-        for z in pz - RADIUS..=pz + RADIUS {
+    'scan: for x in px - radius..=px + radius {
+        for z in pz - radius..=pz + radius {
             // Only generated (loaded) chunks.
             if !game
                 .world

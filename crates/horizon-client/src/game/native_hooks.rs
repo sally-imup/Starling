@@ -1165,7 +1165,7 @@ impl Game<'_> {
         super::android_bundled::native_menu_takes_mouse(self, mouse, index, pressed)
     }
     /// Native mods' lines drawn over everything, walls included (X-Ray outlines).
-    pub(super) fn native_xray_lines(&self) -> Vec<crate::gizmos::Line> {
+    pub(super) fn native_xray_lines(&self) -> Vec<horizon_client::gizmos::Line> {
         super::android_bundled::native_xray_lines(self)
     }
     /// Before an eligible targeted block's selection outline is built.
