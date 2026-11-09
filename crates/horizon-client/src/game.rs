@@ -14969,7 +14969,8 @@ impl Game<'_> {
         let mut lines = self.fishing_line(alpha, size);
         let g = self.debug_gizmos(alpha as f32, camera.to_array());
         lines.extend(g.lines);
-        let on_top = g.on_top;
+        let mut on_top = g.on_top;
+        on_top.extend(self.native_xray_lines());
         let colored_lights = if self.title.is_none() {
             self.native_frame_visuals(camera, &mut lines)
         } else {
@@ -15083,6 +15084,7 @@ impl Game<'_> {
             Vec::new()
         };
         let mut hud = horizon_client::spans::time("hud", || self.hud(size));
+        self.native_gui_batch(&mut hud);
         #[cfg(target_os = "android")]
         {
             self.pad.touch.auxiliary_only =
@@ -17596,6 +17598,10 @@ impl Game<'_> {
                     }
                     match self.screen {
                         Screen::Playing => {
+                            // Saturn Client's menu, open over the game, takes the click first.
+                            if self.native_menu_takes_mouse(button, pressed) {
+                                return Ok(());
+                            }
                             if pressed && !self.captured {
                                 self.capture(true);
                                 return Ok(());

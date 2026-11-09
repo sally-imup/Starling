@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: MIT; see LICENSE in this directory.
 // Saturn Client's shared state: its id, its settings, and what each one does.
 pub const ID: &str = "saturn";
-pub const VERSION: &str = "0.3.0";
-pub const DESCRIPTION: &str = "Saturn Client: client-side tweaks for the Android client. No Particle, a custom block selection box and loot beams.";
+pub const VERSION: &str = "0.5.0";
+pub const DESCRIPTION: &str = "Saturn Client: client-side tweaks for the Android client. No Particle, a custom block selection box, loot beams, X-Ray and GUI animation.";
 pub const NO_PARTICLES: &str = "no_particles";
 pub const BOX: &str = "box";
 pub const BOX_COLOR: &str = "box_color";
 pub const BOX_WIDTH: &str = "box_width";
 pub const BEAMS: &str = "beams";
 pub const BEAM_COLOR: &str = "beam_color";
+pub const XRAY: &str = "xray";
+pub const GUI_ANIM: &str = "gui_anim";
 
 /// The colours the box and the beams pick from: name and ARGB.
 pub const COLORS: [(&str, u32); 6] = [
@@ -38,6 +40,10 @@ pub struct Settings {
     pub beams_on: bool,
     /// Index into `COLORS`.
     pub beam_color: usize,
+    /// Outlines of ores through the walls.
+    pub xray_on: bool,
+    /// Menus and screens ease in when they open.
+    pub gui_anim: bool,
 }
 
 impl Settings {
@@ -55,6 +61,8 @@ impl Settings {
             box_width: index(BOX_WIDTH, 1, WIDTHS.len()),
             beams_on: get(BEAMS).is_some_and(|v| v.trim() == "true"),
             beam_color: index(BEAM_COLOR, 1, COLORS.len()),
+            xray_on: get(XRAY).is_some_and(|v| v.trim() == "true"),
+            gui_anim: get(GUI_ANIM).is_some_and(|v| v.trim() == "true"),
         }
     }
     /// The settings page's buttons, in order.
@@ -67,6 +75,8 @@ impl Settings {
             format!("Box width: {}x", WIDTHS[self.box_width]),
             format!("Loot beams: {}", on(self.beams_on)),
             format!("Beam colour: {}", COLORS[self.beam_color].0),
+            format!("X-Ray: {}", on(self.xray_on)),
+            format!("GUI animation: {}", on(self.gui_anim)),
         ]
     }
     /// A click on button `i`: change that setting.
@@ -78,10 +88,12 @@ impl Settings {
             3 => self.box_width = (self.box_width + 1) % WIDTHS.len(),
             4 => self.beams_on = !self.beams_on,
             5 => self.beam_color = (self.beam_color + 1) % COLORS.len(),
+            6 => self.xray_on = !self.xray_on,
+            7 => self.gui_anim = !self.gui_anim,
             _ => {}
         }
     }
-    pub fn stored(&self) -> [(&'static str, String); 6] {
+    pub fn stored(&self) -> [(&'static str, String); 8] {
         let flag = |b: bool| String::from(if b { "true" } else { "false" });
         [
             (NO_PARTICLES, flag(self.no_particles)),
@@ -90,6 +102,8 @@ impl Settings {
             (BOX_WIDTH, self.box_width.to_string()),
             (BEAMS, flag(self.beams_on)),
             (BEAM_COLOR, self.beam_color.to_string()),
+            (XRAY, flag(self.xray_on)),
+            (GUI_ANIM, flag(self.gui_anim)),
         ]
     }
     /// The outline to draw, as (ARGB, width scale), or None when the box is off.

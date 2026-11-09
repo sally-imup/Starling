@@ -37,6 +37,18 @@ mod saturn_outline;
 mod saturn_beams;
 
 #[cfg(target_os = "android")]
+#[path = "android_bundled/saturn/saturn_xray.rs"]
+mod saturn_xray;
+
+#[cfg(target_os = "android")]
+#[path = "android_bundled/saturn/saturn_gui.rs"]
+mod saturn_gui;
+
+#[cfg(target_os = "android")]
+#[path = "android_bundled/saturn/saturn_menu.rs"]
+mod saturn_menu;
+
+#[cfg(target_os = "android")]
 #[path = "android_bundled/zoom/zoom_key.rs"]
 mod zoom_key;
 
@@ -136,6 +148,7 @@ pub(super) fn native_key(game: &mut Game<'_>, key: &str, pressed: bool) {
     let _ = (&game, &key, &pressed);
     #[cfg(target_os = "android")]
     {
+        saturn_menu::key(&mut *game, key, pressed);
         zoom_key::run(&mut *game, key, pressed);
     }
 }
@@ -206,6 +219,8 @@ pub(super) fn native_frame(game: &mut Game<'_>, elapsed: Duration) {
     {
         recipes_frame::run(&mut *game);
         saturn_frame::run(&mut *game);
+        saturn_gui::frame(&*game, elapsed);
+        saturn_menu::frame(&mut *game);
     }
 }
 
@@ -250,5 +265,62 @@ pub(super) fn native_tick(game: &mut Game<'_>) {
     #[cfg(target_os = "android")]
     {
         saturn_beams::run(&mut *game);
+        saturn_xray::run(&mut *game);
+    }
+}
+
+pub(super) fn native_xray_lines(game: &Game<'_>) -> Vec<crate::gizmos::Line> {
+    #[cfg(target_os = "android")]
+    {
+        saturn_xray::lines(game)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = game;
+        Vec::new()
+    }
+}
+
+pub(super) fn native_gui_batch(game: &Game<'_>, batch: &mut horizon_client_render::hud::HudBatch) {
+    #[cfg(target_os = "android")]
+    {
+        saturn_gui::apply(game, batch);
+        saturn_menu::draw(game, batch);
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (game, batch);
+    }
+}
+
+pub(super) fn native_screen_mouse_button_pressed_pre(
+    screen: &NativeScreenView<'_>,
+    button: i32,
+    canceled: &mut bool,
+) {
+    #[cfg(target_os = "android")]
+    {
+        saturn_menu::click(screen.mouse, button, canceled);
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = (screen, button, canceled);
+    }
+}
+
+pub(super) fn native_menu_takes_mouse(
+    game: &mut Game<'_>,
+    mouse: [f32; 2],
+    button: i32,
+    pressed: bool,
+) -> bool {
+    let _ = (&game, &mouse, &button, &pressed);
+    #[cfg(target_os = "android")]
+    {
+        saturn_menu::takes_mouse(mouse, button, pressed)
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        false
     }
 }

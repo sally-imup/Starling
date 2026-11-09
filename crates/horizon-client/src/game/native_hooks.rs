@@ -1148,6 +1148,26 @@ impl Game<'_> {
     pub(super) fn native_tick(&mut self) {
         super::android_bundled::native_tick(self);
     }
+    /// A native mod's pass over the frame's GUI (every menu and screen, title included), before
+    /// the touch controls and the virtual pointer are drawn over it.
+    pub(super) fn native_gui_batch(&self, batch: &mut horizon_client_render::hud::HudBatch) {
+        super::android_bundled::native_gui_batch(self, batch);
+    }
+    /// Whether a native mod's open menu takes a mouse button while playing (its clicks are
+    /// its own, and its release too). The cursor is free while it is open.
+    pub(super) fn native_menu_takes_mouse(&mut self, button: MouseButton, pressed: bool) -> bool {
+        let index = match button {
+            MouseButton::Left => 0,
+            MouseButton::Right => 1,
+            _ => 2,
+        };
+        let mouse = self.native_cursor();
+        super::android_bundled::native_menu_takes_mouse(self, mouse, index, pressed)
+    }
+    /// Native mods' lines drawn over everything, walls included (X-Ray outlines).
+    pub(super) fn native_xray_lines(&self) -> Vec<crate::gizmos::Line> {
+        super::android_bundled::native_xray_lines(self)
+    }
     /// Before an eligible targeted block's selection outline is built.
     /// Cancel skips only the default block highlight, after normal HUD and game-mode gates.
     pub(super) fn native_block_highlight(
@@ -1606,7 +1626,8 @@ impl Game<'_> {
         modifiers: u32,
         canceled: &mut bool,
     ) {
-        let _ = (screen, button, modifiers, canceled);
+        let _ = modifiers;
+        super::android_bundled::native_screen_mouse_button_pressed_pre(screen, button, canceled);
     }
     /// A mouse button went up over the open screen
     /// (`ScreenEvent.MouseButtonReleased.Pre`, vanilla's

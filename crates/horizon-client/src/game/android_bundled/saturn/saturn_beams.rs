@@ -1,14 +1,17 @@
 // Copyright (c) 2026 Sally. Saturn Client, bundled in the Android client.
 // SPDX-License-Identifier: MIT; see LICENSE in this directory.
 // Saturn Client's loot beams: a column of particles above each item on the ground.
-// The particles are exempt, so No Particle leaves them alone.
+// The particles live in their own list, so No Particle leaves them alone.
 use horizon_client::particles::ParticleOptions;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 /// Items farther than this (in blocks, across the ground) get no beam.
 const RANGE: f64 = 48.0;
-/// Heights above an item's position where a beam's particles start.
-const HEIGHTS: [f64; 4] = [0.5, 1.5, 2.5, 3.5];
+/// A beam's particles: this many, this far apart (blocks), above the item.
+const COUNT: usize = 12;
+const STEP: f64 = 0.35;
+/// Ticks a particle lives. Spawned every other tick, so the column stays unbroken.
+const LIFETIME: i32 = 6;
 
 static TICK: AtomicU32 = AtomicU32::new(0);
 
@@ -37,8 +40,9 @@ pub(super) fn run(game: &mut crate::game::Game<'_>) {
         if dx * dx + dz * dz > RANGE * RANGE {
             continue;
         }
-        for dy in HEIGHTS {
-            game.particles.add_exempt(&options, [x, y + dy, z], [0.0; 3]);
+        for i in 0..COUNT {
+            let dy = 0.25 + i as f64 * STEP;
+            game.particles.add_beam(&options, [x, y + dy, z], LIFETIME);
         }
     }
 }

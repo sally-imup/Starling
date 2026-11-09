@@ -350,8 +350,6 @@ pub struct Particle {
     bb_width: f32,
     bb_height: f32,
     pub on_ground: bool,
-    /// Saturn Client's loot beams: kept while `no_particles` is on.
-    pub exempt: bool,
     has_physics: bool,
     /// Particles that move without collision (`move` overridden).
     free_move: bool,
@@ -688,7 +686,6 @@ impl Particle {
     fn blank(ty: ParticleType, p: [f64; 3]) -> Self {
         Self {
             ty,
-            exempt: false,
             position: p,
             previous: p,
             velocity: [0.0; 3],
@@ -1051,6 +1048,9 @@ impl ParticleLevel<'_> {
 pub struct ParticleEngine {
     particles: Vec<Particle>,
     pending: Vec<Particle>,
+    /// Saturn Client's loot beams: their own list, untouched by `no_particles`
+    /// and the particle cap.
+    beams: Vec<Particle>,
     /// Saturn Client's No Particle: nothing is made or kept while set.
     pub no_particles: bool,
     /// `ParticleEngine.random`, handed to every `ParticleProvider`.
@@ -1101,6 +1101,7 @@ impl ParticleEngine {
         let mut engine = Self {
             particles: Vec::new(),
             pending: Vec::new(),
+            beams: Vec::new(),
             no_particles: false,
             random: LegacyRandom::new(0x7061_7274),
             level_random: LegacyRandom::new(0x6c65_7665),
@@ -1255,6 +1256,7 @@ impl ParticleEngine {
         self.emitters.clear();
         self.particles.clear();
         self.pending.clear();
+        self.beams.clear();
     }
     /// A vibration signal flying from `from` to `to` in `ticks`
     /// (`VibrationParticleOption`).
@@ -1295,13 +1297,14 @@ impl ParticleEngine {
     pub fn level_random(&mut self) -> &mut LegacyRandom {
         &mut self.level_random
     }
-    /// Like `add`, but the particle is `exempt`: kept while `no_particles` is on
-    /// (Saturn Client's loot beams). The caller limits how many it makes.
-    pub fn add_exempt(&mut self, options: &ParticleOptions, p: [f64; 3], v: [f64; 3]) {
+    /// A loot beam's particle (Saturn Client): in its own list, living `lifetime`
+    /// ticks, so `no_particles` and the particle cap leave it alone. The caller limits
+    /// how many it makes.
+    pub fn add_beam(&mut self, options: &ParticleOptions, p: [f64; 3], lifetime: i32) {
         let seed = self.seeds.next_long();
-        if let Some(mut particle) = self.make(options, p, v, seed) {
-            particle.exempt = true;
-            self.pending.push(particle);
+        if let Some(mut particle) = self.make(options, p, [0.0; 3], seed) {
+            particle.lifetime = lifetime;
+            self.beams.push(particle);
         }
     }
     /// `ClientLevel.addParticle`: dropped beyond 32 blocks of the camera unless
@@ -3336,9 +3339,9 @@ impl ParticleEngine {
     }
     pub fn tick(&mut self, level: &ParticleLevel) {
         if self.no_particles {
-            // Saturn Client: keep only the exempt particles (loot beams).
-            self.particles.retain(|p| p.exempt);
-            self.pending.retain(|p| p.exempt);
+            // Saturn Client: the general particles go; the loot beams have their own list.
+            self.particles.clear();
+            self.pending.clear();
         }
         self.tick_starters();
         for (options, feet, width, height, life) in std::mem::take(&mut self.emitters) {
@@ -3353,6 +3356,12 @@ impl ParticleEngine {
         }
         particles.retain(|p| !p.removed);
         self.particles = particles;
+        let mut beams = std::mem::take(&mut self.beams);
+        for p in &mut beams {
+            self.tick_particle(p, level);
+        }
+        beams.retain(|p| !p.removed);
+        self.beams = beams;
         let pending = std::mem::take(&mut self.pending);
         for mut p in pending {
             if p.pre_tick {
@@ -4138,7 +4147,7 @@ impl ParticleEngine {
         // Camera.setRotation: rotationYXZ(PI - yRot, -xRot, 0).
         let base = Quat::from_rotation_y(std::f32::consts::PI - yaw.to_radians())
             * Quat::from_rotation_x(-pitch.to_radians());
-        for p in &self.particles {
+        for p in self.particles.iter().chain(self.beams.iter()) {
             if p.no_render {
                 continue;
             }
