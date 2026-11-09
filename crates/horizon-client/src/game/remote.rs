@@ -5567,7 +5567,9 @@ impl Game<'_> {
             }
             return Ok(());
         }
-        let stick = self.pad_move();
+        let pad = self.pad_move();
+        // Freecam takes the movement keys and the stick for the camera, as on the local tick.
+        let stick = self.native_freecam_input(pad);
         if self.player.is_none() {
             return Ok(());
         }
